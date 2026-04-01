@@ -23,6 +23,7 @@ class Internship(Base):
     is_new      = Column(Boolean, default=True)
     is_active   = Column(Boolean, default=True)
     base_match  = Column(Integer, default=70)           # default match %
+    apply_link  = Column(String(500), nullable=True)
     created_at  = Column(DateTime, default=datetime.utcnow)
     updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

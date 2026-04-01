@@ -16,6 +16,7 @@ class InternshipCreate(BaseModel):
     letter: Optional[str] = None
     badge: str = "bb"
     base_match: int = 70
+    apply_link: str
 
 
 class InternshipUpdate(BaseModel):
@@ -29,6 +30,7 @@ class InternshipUpdate(BaseModel):
     deadline: Optional[str] = None
     is_active: Optional[bool] = None
     base_match: Optional[int] = None
+    apply_link: Optional[str] = None
 
 
 class InternshipOut(BaseModel):
@@ -47,6 +49,7 @@ class InternshipOut(BaseModel):
     is_new: bool
     is_active: bool
     base_match: int
+    apply_link: Optional[str] = None
     match: Optional[int] = None   # personalised match score, injected at runtime
     created_at: datetime
 
