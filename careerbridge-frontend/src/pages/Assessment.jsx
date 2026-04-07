@@ -12,7 +12,7 @@ const getIconForType = (type) => {
   }
 }
 
-export default function Assessment() {
+export default function Assessment({ onNav, isLoggedIn }) {
   const [view, setView] = useState('home') // 'home' | 'quiz' | 'result'
   const [availableTests, setAvailableTests] = useState([])
   const [stats, setStats] = useState({ tests_done: 0, avg_score: 0, best_score: 0 })
@@ -126,6 +126,28 @@ export default function Assessment() {
   return (
     <div className="admin-enter" style={{ maxWidth: view === 'home' ? 960 : 760, margin: '0 auto', padding: '40px 28px' }}>
 
+      {/* Not logged in */}
+      {!isLoggedIn && view === 'home' && (
+        <div style={{ maxWidth: 600, margin: '0 auto 40px', textAlign: 'center' }}>
+          <div style={{
+            background: 'var(--s1)', border: '1px solid rgba(0,245,212,.2)', borderRadius: 16,
+            padding: 36, animation: 'fadeUp .4s both'
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 14 }}>🎯</div>
+            <div style={{ fontFamily: '"Bebas Neue"', fontSize: 'clamp(1.8rem,3.5vw,3rem)', marginBottom: 8, color: 'var(--t1)' }}>
+              Log In to Start Your Journey
+            </div>
+            <p style={{ fontSize: 14, color: 'var(--t2)', lineHeight: 1.7, marginBottom: 22 }}>
+              Create a free account or log in to take skill assessments, get AI-graded results, and track your progress.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Btn size="md" onClick={() => onNav('login')}>Log In →</Btn>
+              <Btn variant="g" size="md" onClick={() => onNav('login')}>Create Account</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Home */}
       {view === 'home' && <>
         <div className="admin-card" style={{ marginBottom: 32, animationDelay: '.03s' }}>
@@ -136,12 +158,25 @@ export default function Assessment() {
           <p style={{ fontSize: 14, color: 'var(--t2)' }}>Choose a domain to begin. All tests are auto-graded with instant AI feedback.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 32 }}>
-          {[{ v: stats.tests_done, label: 'Tests Done', c: 'var(--P)' }, { v: stats.avg_score, label: 'Avg. Score', c: 'var(--A)' }, { v: stats.best_score + '%', label: 'Best Score', c: 'var(--E)' }, { v: 'Top 8%', label: 'Percentile', c: '#a78bfa' }].map(({ v, label, c }, idx) => (
-            <div key={label} className="admin-panel admin-kpi" style={{ padding: 16, background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 12, textAlign: 'center', animationDelay: `${0.08 + idx * 0.05}s` }}>
-              <div style={{ fontFamily: '"Bebas Neue"', fontSize: 32, color: c }}>{v}</div>
-              <div style={{ fontFamily: '"DM Mono"', fontSize: 11, color: 'var(--t4)' }}>{label}</div>
-            </div>
-          ))}
+          {(() => {
+            // Compute percentile: higher avg_score = better percentile (lower rank number)
+            // e.g. avg 90% → top 10%, avg 80% → top 20%, etc.
+            const percentileVal = stats.tests_done === 0
+              ? null
+              : Math.max(1, Math.round((100 - stats.avg_score) / 5) * 5)
+            const percentileDisplay = percentileVal === null ? '—' : `Top ${percentileVal}%`
+            return [
+              { v: stats.tests_done, label: 'Tests Done', c: 'var(--P)' },
+              { v: stats.avg_score ? stats.avg_score + '%' : '—', label: 'Avg. Score', c: 'var(--A)' },
+              { v: stats.best_score ? stats.best_score + '%' : '—', label: 'Best Score', c: 'var(--E)' },
+              { v: percentileDisplay, label: 'Percentile', c: '#a78bfa' },
+            ].map(({ v, label, c }, idx) => (
+              <div key={label} className="admin-panel admin-kpi" style={{ padding: 16, background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 12, textAlign: 'center', animationDelay: `${0.08 + idx * 0.05}s` }}>
+                <div style={{ fontFamily: '"Bebas Neue"', fontSize: 32, color: c }}>{v}</div>
+                <div style={{ fontFamily: '"DM Mono"', fontSize: 11, color: 'var(--t4)' }}>{label}</div>
+              </div>
+            ))
+          })()}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           {availableTests.map((t, idx) => {

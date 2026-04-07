@@ -87,6 +87,14 @@ export const api = {
       update: (id, payload) => request(`/admin/internships/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
       delete: (id) => request(`/admin/internships/${id}`, { method: 'DELETE' }),
     },
+    downloadStudentReport: async (userId) => {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${BASE_URL}/admin/report/${userId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to generate report')
+      return response.blob()
+    },
   },
   analytics: {
     dashboard: () => request('/analytics/dashboard'),

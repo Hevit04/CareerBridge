@@ -7,7 +7,6 @@ import Admin from './pages/Admin'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminInternships from './pages/admin/AdminInternships'
 import AdminModeration from './pages/admin/AdminModeration'
-import AdminSystem from './pages/admin/AdminSystem'
 import AdminTests from './pages/admin/AdminTests'
 import AdminUsers from './pages/admin/AdminUsers'
 import Dashboard from './pages/Dashboard'
@@ -27,7 +26,6 @@ const PAGES = {
   'admin-tests': AdminTests,
   'admin-internships': AdminInternships,
   'admin-analytics': AdminAnalytics,
-  'admin-system': AdminSystem,
   'admin-moderation': AdminModeration,
   interview: Interview,
   internships: Internships,
@@ -42,7 +40,6 @@ const ADMIN_PAGES = new Set([
   'admin-tests',
   'admin-internships',
   'admin-analytics',
-  'admin-system',
   'admin-moderation',
 ])
 

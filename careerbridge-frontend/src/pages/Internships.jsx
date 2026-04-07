@@ -18,6 +18,7 @@ export default function Internships({ onNav, isLoggedIn }) {
   const [applications, setApplications] = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [alreadyAppliedAnswered, setAlreadyAppliedAnswered] = useState({}) // { [internshipId]: true/false }
 
   if (!isLoggedIn) {
     return (
@@ -26,11 +27,11 @@ export default function Internships({ onNav, isLoggedIn }) {
           <span style={{ fontSize: 32 }}>🔒</span>
         </div>
         <h1 style={{ fontFamily: '"Bebas Neue"', fontSize: 'clamp(2.5rem,5vw,4.5rem)', lineHeight: 1, marginBottom: 12 }}>
-          ACCESS <span style={{ color: 'var(--E)' }}>RESTRICTED</span>
+          LOG IN TO <span style={{ color: 'var(--E)' }}>START YOUR JOURNEY</span>
         </h1>
         <p style={{ fontSize: 16, color: 'var(--t2)', marginBottom: 32, lineHeight: 1.6 }}>
           The Internship Pool is exclusive to CareerBridge members. <br />
-          Login or create an account to view and apply for curated opportunities.
+          Log in or create a free account to view and apply for curated opportunities.
         </p>
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center' }}>
           <Btn size="md" onClick={() => onNav('login')}>Login to Account →</Btn>
@@ -63,13 +64,34 @@ export default function Internships({ onNav, isLoggedIn }) {
 
   const isApplied = (id) => applications.some(a => a.internship_id === id)
 
-  const handleApply = async (id) => {
+  const handleApply = async (intern) => {
+    if (intern.apply_link) {
+      // Just open the link — don't auto-mark as applied.
+      // The "Have you applied?" prompt handles that.
+      window.open(intern.apply_link, '_blank', 'noopener,noreferrer')
+      return
+    }
+    // Internal apply (no external link)
     try {
-      await api.internships.apply(id)
+      await api.internships.apply(intern.id)
       toast('🚀 Application submitted successfully!')
       fetchData()
     } catch (err) {
       toast('❌ Error: ' + err.message)
+    }
+  }
+
+  const handleAlreadyApplied = async (intern, answer) => {
+    setAlreadyAppliedAnswered(prev => ({ ...prev, [intern.id]: answer }))
+    if (answer) {
+      try {
+        await api.internships.apply(intern.id)
+        toast('✅ Marked as applied!')
+        fetchData()
+      } catch (err) {
+        // Might already be applied — just refresh
+        fetchData()
+      }
     }
   }
 
@@ -152,8 +174,8 @@ export default function Internships({ onNav, isLoggedIn }) {
             </div>
             <div style={{ borderTop: '1px solid var(--bd)', paddingTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontFamily: '"DM Mono"', fontSize: 11, color: 'var(--t4)' }}>Deadline: {new Date(intern.deadline).toLocaleDateString()}</span>
-              <Btn size="xs" disabled={isApplied(intern.id)} onClick={(e) => { e.stopPropagation(); handleApply(intern.id) }}>
-                {isApplied(intern.id) ? 'Applied ✓' : 'Apply →'}
+              <Btn size="xs" disabled={isApplied(intern.id)} onClick={(e) => { e.stopPropagation(); handleApply(intern) }}>
+                {isApplied(intern.id) ? 'Applied ✓' : (intern.apply_link ? 'Apply Externally ↗' : 'Apply →')}
               </Btn>
             </div>
           </div>
@@ -199,10 +221,46 @@ export default function Internships({ onNav, isLoggedIn }) {
               <br /><br />
               <strong>Required skills:</strong> {selected.tags?.join(', ') || 'Not specified'}
             </p>
+
+            {/* Already Applied Prompt: show if not applied AND user hasn't said Yes yet */}
+            {!isApplied(selected.id) && alreadyAppliedAnswered[selected.id] !== true && (
+              <div style={{
+                background: 'rgba(0,245,212,.05)', border: '1px solid rgba(0,245,212,.16)',
+                borderRadius: 10, padding: '12px 16px', marginBottom: 14,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)' }}>Have you already applied externally?</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => handleAlreadyApplied(selected, true)}
+                    style={{
+                      padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      background: 'rgba(0,245,212,.12)', border: '1px solid rgba(0,245,212,.3)',
+                      color: 'var(--P)', fontFamily: 'Syne, sans-serif', transition: 'all .2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,.22)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,.12)'}
+                  >Yes ✓</button>
+                  <button
+                    onClick={() => handleAlreadyApplied(selected, false)}
+                    style={{
+                      padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      background: alreadyAppliedAnswered[selected.id] === false
+                        ? 'rgba(255,77,109,.15)' : 'rgba(255,255,255,.04)',
+                      border: alreadyAppliedAnswered[selected.id] === false
+                        ? '1px solid rgba(255,77,109,.4)' : '1px solid var(--bd)',
+                      color: alreadyAppliedAnswered[selected.id] === false ? '#ff4d6d' : 'var(--t3)',
+                      fontFamily: 'Syne, sans-serif', transition: 'all .2s'
+                    }}
+                  >No ✗</button>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: '"DM Mono"', fontSize: 12, color: 'var(--t4)' }}>Deadline: {new Date(selected.deadline).toLocaleDateString()}</span>
-              <Btn size="sm" disabled={isApplied(selected.id)} onClick={() => handleApply(selected.id)}>
-                {isApplied(selected.id) ? 'Application Sent' : 'Apply Now →'}
+              <Btn size="sm" disabled={isApplied(selected.id)} onClick={() => handleApply(selected)}>
+                {isApplied(selected.id) ? 'Applied ✓' : (selected.apply_link ? 'Apply via External Link ↗' : 'Apply Now →')}
               </Btn>
             </div>
           </div>

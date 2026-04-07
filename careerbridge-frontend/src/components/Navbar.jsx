@@ -17,7 +17,6 @@ const ADMIN_LINKS = [
   { key: 'admin-tests', label: 'Tests' },
   { key: 'admin-internships', label: 'Internships' },
   { key: 'admin-analytics', label: 'Analytics' },
-  { key: 'admin-system', label: 'System' },
   { key: 'admin-moderation', label: 'Moderation' },
 ]
 

@@ -103,7 +103,8 @@ export default function Profile({ onNav, isLoggedIn }) {
     setSaving(true)
     try {
       await api.users.update(formData)
-      toast('✅ Profile saved successfully!')
+      toast('✅ Changes Saved successfully')
+      alert('Changes Saved successfully')
       fetchProfile()
     } catch (err) {
       toast('❌ Error saving profile: ' + err.message)
@@ -227,8 +228,8 @@ export default function Profile({ onNav, isLoggedIn }) {
                 { label: 'First Name', key: 'first_name' },
                 { label: 'Last Name', key: 'last_name' },
                 { label: 'Email', val: user.email, full: true, disabled: true },
-                { label: 'Phone', key: 'phone' },
-                { label: 'Enrollment No.', key: 'enrollment_no' },
+                { label: 'Phone', key: 'phone', maxLength: 10 },
+                { label: 'Enrollment No.', key: 'enrollment_no', disabled: true, val: formData.enrollment_no || user.enrollment_no || '' },
                 { label: 'Branch', key: 'branch', full: true },
               ].map((f, i) => (
                 <div key={i} style={{ ...(f.full && { gridColumn: '1 / -1' }) }}>
@@ -239,6 +240,7 @@ export default function Profile({ onNav, isLoggedIn }) {
                     type="text"
                     value={f.val !== undefined ? f.val : formData[f.key]}
                     disabled={f.disabled}
+                    maxLength={f.maxLength || undefined}
                     onChange={f.key ? (e) => setFormData(p => ({ ...p, [f.key]: e.target.value })) : undefined}
                     style={{
                       width: '100%', background: f.disabled ? 'transparent' : 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 10,
@@ -248,6 +250,11 @@ export default function Profile({ onNav, isLoggedIn }) {
                     onFocus={e => !f.disabled && (e.target.style.borderColor = 'var(--P)')}
                     onBlur={e => e.target.style.borderColor = 'var(--bd)'}
                   />
+                  {f.maxLength && (
+                    <div style={{ fontFamily: '"DM Mono"', fontSize: 10, color: (formData[f.key] || '').length >= f.maxLength ? 'var(--E)' : 'var(--t4)', marginTop: 4, textAlign: 'right' }}>
+                      {(formData[f.key] || '').length}/{f.maxLength}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -256,35 +263,68 @@ export default function Profile({ onNav, isLoggedIn }) {
           <div style={{ background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 16, padding: 24 }}>
             <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 20, color: 'var(--t1)' }}>Career Preferences</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              {[
-                { label: 'Preferred Role', type: 'select', key: 'preferred_role', opts: ['Software Engineer', 'Data Scientist', 'ML Engineer', 'Backend Dev', 'Frontend Dev'] },
-                { label: 'Location Preference', type: 'text', key: 'location_pref' },
-              ].map((f, i) => (
-                <div key={i}>
+              
+              {/* Preferred Role Column */}
+              <div>
                   <label style={{ fontFamily: '"DM Mono"', fontSize: 11, fontWeight: 700, color: 'var(--t3)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '.07em' }}>
-                    {f.label}
+                    Preferred Role
                   </label>
-                  {f.type === 'select' ? (
-                    <select 
-                      value={formData[f.key]}
-                      onChange={(e) => setFormData(p => ({ ...p, [f.key]: e.target.value }))}
+                  
+                  <select 
+                    value={
+                      ['Software Engineer', 'Data Scientist', 'ML Engineer', 'Backend Dev', 'Frontend Dev', ''].includes(formData.preferred_role) 
+                      ? formData.preferred_role 
+                      : 'Other'
+                    }
+                    onChange={(e) => {
+                      if (e.target.value === 'Other') {
+                        setFormData(p => ({ ...p, preferred_role: ' ' })) // non-empty space to trigger input
+                      } else {
+                        setFormData(p => ({ ...p, preferred_role: e.target.value }))
+                      }
+                    }}
+                    style={{
+                      width: '100%', background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 10,
+                      padding: '12px 16px', color: 'var(--t1)', fontFamily: 'Syne, sans-serif', fontSize: 14,
+                      cursor: 'pointer', outline: 'none', marginBottom: 
+                        !['Software Engineer', 'Data Scientist', 'ML Engineer', 'Backend Dev', 'Frontend Dev', ''].includes(formData.preferred_role) ? 10 : 0
+                    }}>
+                    <option value="">Select Role</option>
+                    <option value="Software Engineer">Software Engineer</option>
+                    <option value="Data Scientist">Data Scientist</option>
+                    <option value="ML Engineer">ML Engineer</option>
+                    <option value="Backend Dev">Backend Dev</option>
+                    <option value="Frontend Dev">Frontend Dev</option>
+                    <option value="Other">Other</option>
+                  </select>
+
+                  {!['Software Engineer', 'Data Scientist', 'ML Engineer', 'Backend Dev', 'Frontend Dev', ''].includes(formData.preferred_role) && (
+                    <input 
+                      type="text" 
+                      placeholder="Enter your custom role"
+                      value={formData.preferred_role.trim()}
+                      onChange={(e) => setFormData(p => ({ ...p, preferred_role: e.target.value }))}
                       style={{
                         width: '100%', background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 10,
                         padding: '12px 16px', color: 'var(--t1)', fontFamily: 'Syne, sans-serif', fontSize: 14,
-                        cursor: 'pointer', outline: 'none',
-                      }}>
-                      <option value="">Select Role</option>
-                      {f.opts.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  ) : (
-                    <input type="text" value={formData[f.key]} onChange={(e) => setFormData(p => ({ ...p, [f.key]: e.target.value }))} style={{
-                      width: '100%', background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 10,
-                      padding: '12px 16px', color: 'var(--t1)', fontFamily: 'Syne, sans-serif', fontSize: 14,
-                      outline: 'none',
-                    }} />
+                        outline: 'none',
+                      }} 
+                    />
                   )}
-                </div>
-              ))}
+              </div>
+
+              {/* Location Preference Column */}
+              <div>
+                  <label style={{ fontFamily: '"DM Mono"', fontSize: 11, fontWeight: 700, color: 'var(--t3)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '.07em' }}>
+                    Location Preference
+                  </label>
+                  <input type="text" value={formData.location_pref} onChange={(e) => setFormData(p => ({ ...p, location_pref: e.target.value }))} style={{
+                    width: '100%', background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 10,
+                    padding: '12px 16px', color: 'var(--t1)', fontFamily: 'Syne, sans-serif', fontSize: 14,
+                    outline: 'none',
+                  }} />
+              </div>
+
             </div>
           </div>
 

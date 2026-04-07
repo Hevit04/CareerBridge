@@ -30,6 +30,18 @@ export default function Dashboard({ onNav, authUser }) {
   const [skills, setSkills] = useState([])
   const [userData, setUserData] = useState(null)
 
+  // Animate skill bars whenever the skills data changes
+  useEffect(() => {
+    if (skills.length === 0) return
+    const bars = document.querySelectorAll('[data-skill-bar]')
+    bars.forEach((b, i) => {
+      const fill = b.querySelector('.pf')
+      if (!fill) return
+      const pct = parseFloat(b.dataset.skillBar)
+      setTimeout(() => { fill.style.transform = `scaleX(${pct})` }, i * 110 + 150)
+    })
+  }, [skills])
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -43,36 +55,38 @@ export default function Dashboard({ onNav, authUser }) {
         ])
         setStats(statsData)
         setReadiness(readinessData.readiness_score)
-        setActivity(activityData)
+
+        // Enrich activity with test names
+        const enrichedActivity = activityData.map(attempt => {
+          const test = testsData.find(t => t.id === attempt.test_id)
+          return { ...attempt, test_name: test ? test.title : 'Mock Test', test_type: test ? test.type : 'Technical' }
+        })
+        setActivity(enrichedActivity)
+
         setMatches(matchesData.slice(0, 4))
         setUserData(uData)
-        
+
         // Compute Dynamic Skills
         const skillMap = {}
         activityData.forEach(attempt => {
-            const test = testsData.find(t => t.id === attempt.test_id);
-            if (test) {
-                if (!skillMap[test.title]) skillMap[test.title] = { sum: 0, count: 0, type: test.type };
-                skillMap[test.title].sum += attempt.percentage;
-                skillMap[test.title].count += 1;
-            }
-        });
+          const test = testsData.find(t => t.id === attempt.test_id)
+          if (test) {
+            if (!skillMap[test.title]) skillMap[test.title] = { sum: 0, count: 0, type: test.type }
+            skillMap[test.title].sum += attempt.percentage
+            skillMap[test.title].count += 1
+          }
+        })
 
         const dynamicSkills = testsData.slice(0, 6).map(test => {
-            const sm = skillMap[test.title];
-            const pct = sm ? Math.round(sm.sum / sm.count) : 0;
-            let color = 'var(--P)';
-            let barStyle = {};
-            if (test.type === 'Aptitude') { color = 'var(--E)'; barStyle = { background: 'linear-gradient(90deg,var(--E),var(--A))' }; }
-            else if (test.type === 'Communication') { color = 'var(--A)'; barStyle = { background: 'linear-gradient(90deg,var(--A),var(--P))' }; }
-            else if (test.type !== 'Technical') { color = '#a78bfa'; barStyle = { background: 'linear-gradient(90deg,var(--N),var(--E))' }; }
-            return {
-                label: test.title,
-                pct,
-                color,
-                barStyle
-            }
-        });
+          const sm = skillMap[test.title]
+          const pct = sm ? Math.round(sm.sum / sm.count) : 0
+          let color = 'var(--P)'
+          let barStyle = {}
+          if (test.type === 'Aptitude') { color = 'var(--E)'; barStyle = { background: 'linear-gradient(90deg,var(--E),var(--A))' } }
+          else if (test.type === 'Communication') { color = 'var(--A)'; barStyle = { background: 'linear-gradient(90deg,var(--A),var(--P))' } }
+          else if (test.type !== 'Technical') { color = '#a78bfa'; barStyle = { background: 'linear-gradient(90deg,var(--N),var(--E))' } }
+          return { label: test.title, pct, color, barStyle }
+        })
 
         if (dynamicSkills.length === 0) {
           setSkills([
@@ -95,14 +109,6 @@ export default function Dashboard({ onNav, authUser }) {
     const isWeekend = now.getDay() === 0 || now.getDay() === 6
     const isBefore4PM = now.getHours() < 16
     setShowInterview(isWeekend && isBefore4PM)
-
-    const bars = document.querySelectorAll('[data-skill-bar]')
-    bars.forEach((b, i) => {
-      const fill = b.querySelector('.pf')
-      if (!fill) return
-      const pct = parseFloat(b.dataset.skillBar)
-      setTimeout(() => { fill.style.transform = `scaleX(${pct})` }, i * 110 + 150)
-    })
   }, [])
 
   const handleDownload = async () => {
@@ -165,7 +171,7 @@ export default function Dashboard({ onNav, authUser }) {
       <div style={{ padding: 32, overflowY: 'auto', background: 'var(--bg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', color: 'var(--t1)', marginBottom: 4 }}>Welcome back, {userData?.first_name || 'Student'}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', color: 'var(--t1)', marginBottom: 4 }}>Welcome, {userData?.first_name || 'Student'}</div>
             <p style={{ fontSize: 14, color: 'var(--t2)' }}>Here's your career readiness snapshot — <span style={{ color: 'var(--P)' }}>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -177,7 +183,7 @@ export default function Dashboard({ onNav, authUser }) {
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>
           {[
-            { label: 'Average Score', val: stats.avg_score, sub: null, children: <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}><span style={{ color: '#4ade80', fontSize: 13, fontWeight: 700 }}>↑ +5.2</span><span style={{ fontFamily: '"DM Mono"', fontSize: 11, color: 'var(--t4)' }}>this week</span></div> },
+            { label: 'Average Score', val: stats.avg_score, sub: null },
             { label: 'Tests Completed', val: stats.tests_done, sub: 'Keep it up!' },
             { label: 'Best Score', val: stats.best_score + '%', valStyle: { background: 'linear-gradient(135deg,var(--A),var(--P))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }, children: <div style={{ marginTop: 6 }}><Badge variant="bg">Peak performance</Badge></div> },
             { label: 'Readiness Level', val: readiness + '%', valStyle: { background: 'linear-gradient(135deg,var(--E),var(--A))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }, sub: 'Target: 90% by May' },
@@ -261,8 +267,8 @@ export default function Dashboard({ onNav, authUser }) {
             <tbody>
               {activity.map(row => (
                 <tr key={row.id}>
-                  <td style={{ color: 'var(--t1)', fontWeight: 600 }}>Mock Test — Attempt #{row.id}</td>
-                  <td><Chip style={{ fontSize: 10 }}>Technical</Chip></td>
+                  <td style={{ color: 'var(--t1)', fontWeight: 600 }}>{row.test_name || 'Mock Test'}</td>
+                  <td><Chip style={{ fontSize: 10 }}>{row.test_type || 'Technical'}</Chip></td>
                   <td style={{ color: 'var(--P)', fontWeight: 700 }}>{row.score} / {row.total}</td>
                   <td>{new Date(row.completed_at).toLocaleDateString()}</td>
                   <td><Badge variant="bg">Completed</Badge></td>

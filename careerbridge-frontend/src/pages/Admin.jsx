@@ -35,14 +35,6 @@ const adminModules = [
     iconBorder: 'rgba(123,47,255,.25)',
   },
   {
-    key: 'admin-system',
-    title: 'System Control',
-    desc: 'Handle platform health, incidents, and database maintenance controls.',
-    icon: <IconGear size={22} color="var(--P)" />,
-    iconBg: 'rgba(0,245,212,.08)',
-    iconBorder: 'rgba(0,245,212,.2)',
-  },
-  {
     key: 'admin-moderation',
     title: 'Content Moderation',
     desc: 'Verify resumes and remove incorrect or policy-violating data.',

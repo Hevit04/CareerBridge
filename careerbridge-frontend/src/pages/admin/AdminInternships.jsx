@@ -26,6 +26,7 @@ export default function AdminInternships({ onNav }) {
     duration: '',
     deadline: '',
     description: '',
+    apply_link: '',
   })
 
   const fetchJobs = async () => {
@@ -45,8 +46,25 @@ export default function AdminInternships({ onNav }) {
   }, [])
 
   const handleSave = async () => {
-    if (!form.company || !form.role || !form.deadline) {
-      toast('⚠️ Company, Role and Deadline are required')
+    if (!form.company || !form.role || !form.deadline || !form.apply_link) {
+      toast('⚠️ Company, Role, Deadline and Apply Link are required')
+      return
+    }
+
+    // Validate deadline is not in the past
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const deadline = new Date(form.deadline)
+    if (deadline < today) {
+      toast('⚠️ Deadline cannot be a past date')
+      return
+    }
+
+    // Validate apply_link is a proper URL
+    try {
+      const url = new URL(form.apply_link.trim())
+      if (!['http:', 'https:'].includes(url.protocol)) throw new Error()
+    } catch {
+      toast('⚠️ Apply Link must be a valid URL (e.g. https://company.com/apply)')
       return
     }
 
@@ -58,7 +76,8 @@ export default function AdminInternships({ onNav }) {
       duration: form.duration.trim(),
       deadline: form.deadline,
       tags: form.skills.split(',').map(s => s.trim()).filter(Boolean),
-      description: form.description.trim()
+      description: form.description.trim(),
+      apply_link: form.apply_link.trim()
     }
 
     try {
@@ -69,7 +88,7 @@ export default function AdminInternships({ onNav }) {
         await api.admin.internships.create(payload)
         toast('🚀 New internship published')
       }
-      setForm({ company: '', role: '', domain: 'swe', skills: '', location: '', duration: '', deadline: '', description: '' })
+      setForm({ company: '', role: '', domain: 'swe', skills: '', location: '', duration: '', deadline: '', description: '', apply_link: '' })
       setSelectedId(null)
       fetchJobs()
     } catch (err) {
@@ -87,7 +106,8 @@ export default function AdminInternships({ onNav }) {
       location: j.location,
       duration: j.duration,
       deadline: j.deadline,
-      description: j.description || ''
+      description: j.description || '',
+      apply_link: j.apply_link || ''
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -114,7 +134,7 @@ export default function AdminInternships({ onNav }) {
       <div className="admin-panel" style={{ background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 16, padding: 20, marginBottom: 14, animationDelay: '.05s' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--t1)' }}>{selectedId ? 'Edit Internship' : 'Add New Opportunity'}</div>
-          {selectedId && <Btn variant="g" size="xs" onClick={() => { setSelectedId(null); setForm({ company: '', role: '', domain: 'swe', skills: '', location: '', duration: '', deadline: '', description: '' }) }}>Cancel Edit</Btn>}
+          {selectedId && <Btn variant="g" size="xs" onClick={() => { setSelectedId(null); setForm({ company: '', role: '', domain: 'swe', skills: '', location: '', duration: '', deadline: '', description: '', apply_link: '' }) }}>Cancel Edit</Btn>}
         </div>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
@@ -142,7 +162,11 @@ export default function AdminInternships({ onNav }) {
           </div>
           <div className="f-grp">
             <label>Deadline</label>
-            <input className="inp" type="date" value={form.deadline} onChange={e => setForm(p => ({ ...p, deadline: e.target.value }))} />
+            <input className="inp" type="date" min={new Date().toISOString().split('T')[0]} value={form.deadline} onChange={e => setForm(p => ({ ...p, deadline: e.target.value }))} />
+          </div>
+          <div className="f-grp">
+            <label>Apply Link (URL)</label>
+            <input className="inp" placeholder="https://..." value={form.apply_link} onChange={e => setForm(p => ({ ...p, apply_link: e.target.value }))} />
           </div>
         </div>
         

@@ -68,7 +68,7 @@ export default function AdminModeration({ onNav }) {
                   <td style={{ color: 'var(--t1)', fontWeight: 700 }}>{m.item}</td>
                   <td>{m.reason}</td>
                   <td>
-                    <Btn variant="g" size="xs" onClick={() => alert(`Opening ${m.file}`)}>
+                    <Btn variant="g" size="xs" onClick={() => window.open(`http://localhost:8000/uploads/resumes/${m.file}`, '_blank', 'noopener,noreferrer')}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                         Open

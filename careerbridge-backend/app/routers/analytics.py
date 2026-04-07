@@ -154,41 +154,53 @@ def generate_report(
     """
     # ── Fetch Data ──────────────────────────────────────────────────────────
     data = dashboard_stats(db, current_user)
-    
+
+    # Fetch interview sessions for this user
+    interview_sessions = (
+        db.query(InterviewSession)
+        .filter(
+            InterviewSession.user_id == current_user.id,
+            InterviewSession.overall_score.isnot(None),
+        )
+        .order_by(InterviewSession.completed_at.desc())
+        .all()
+    )
+
     # ── Create PDF ──────────────────────────────────────────────────────────
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
-    
+
     # Header
     p.setFont("Helvetica-Bold", 24)
     p.drawCentredString(width/2, height - 50, "CareerBridge Readiness Report")
-    
+
     p.setFont("Helvetica", 12)
     full_name = f"{current_user.first_name} {current_user.last_name}"
     p.drawCentredString(width/2, height - 70, f"Prepared for: {full_name}")
     p.drawCentredString(width/2, height - 85, f"Date: {datetime.datetime.now().strftime('%B %d, %Y')}")
-    
+
     p.line(50, height - 100, width - 50, height - 100)
-    
+
     # Overview Section
     p.setFont("Helvetica-Bold", 16)
     p.drawString(50, height - 130, "Overview")
-    
+
     p.setFont("Helvetica", 12)
     p.drawString(70, height - 150, f"Overall Career Score: {data['overall_score']}%")
     p.drawString(70, height - 165, f"Career Readiness Level: {data['readiness_level']}%")
     p.drawString(70, height - 180, f"Tests Completed: {data['tests_completed']}")
-    
+    p.drawString(70, height - 195, f"Mock Interviews Completed: {len(interview_sessions)}")
+
     # Skill Breakdown
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, height - 210, "Skill Breakdown")
-    
-    y = height - 230
+    p.drawString(50, height - 225, "Skill Breakdown")
+
+    y = height - 245
     for skill in data['skill_breakdown']:
         p.setFont("Helvetica", 12)
         p.drawString(70, y, f"{skill['label']}: {skill['pct']}%")
-        
+
         # Simple progress bar
         p.setStrokeColor(colors.lightgrey)
         p.rect(250, y-2, 200, 10)
@@ -196,38 +208,96 @@ def generate_report(
         p.rect(250, y-2, 200 * (skill['pct']/100), 10, fill=1)
         p.setFillColor(colors.black)
         y -= 25
-        
-    # Recent Activity
+
+    # ── Mock Interview Performance ──────────────────────────────────────────
+    y -= 10
+    if y < 100:
+        p.showPage()
+        y = height - 50
+
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, y - 10, "Recent Activity")
-    y -= 35
-    
+    p.drawString(50, y, "Mock Interview Performance")
+    y -= 20
+
+    if interview_sessions:
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(70, y, "Interview Type")
+        p.drawString(230, y, "Overall Score")
+        p.drawString(340, y, "Communication")
+        p.drawString(450, y, "Date")
+        y -= 12
+        p.line(65, y + 10, width - 50, y + 10)
+        y -= 5
+
+        p.setFont("Helvetica", 10)
+        for s in interview_sessions:
+            if y < 60:
+                p.showPage()
+                y = height - 50
+            label = f"{s.session_type.title()} Mock Interview"
+            overall = f"{s.overall_score}/100" if s.overall_score else "—"
+            comm = f"{s.communication_score}/100" if s.communication_score else "—"
+            date_str = s.completed_at.strftime("%b %d, %Y") if s.completed_at else "—"
+            p.drawString(70, y, label)
+            p.drawString(230, y, overall)
+            p.drawString(340, y, comm)
+            p.drawString(450, y, date_str)
+            y -= 18
+
+        # Average score bar
+        avg_iv = round(sum(s.overall_score for s in interview_sessions) / len(interview_sessions), 1)
+        y -= 8
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(70, y, f"Average Interview Score: {avg_iv}/100")
+        p.setStrokeColor(colors.lightgrey)
+        p.rect(270, y - 2, 200, 10)
+        p.setFillColor(colors.HexColor("#00F5D4") if avg_iv > 70 else colors.HexColor("#7B2FFF"))
+        p.rect(270, y - 2, 200 * (avg_iv / 100), 10, fill=1)
+        p.setFillColor(colors.black)
+        y -= 25
+    else:
+        p.setFont("Helvetica", 11)
+        p.setFillColor(colors.grey)
+        p.drawString(70, y, "No mock interviews completed yet.")
+        p.setFillColor(colors.black)
+        y -= 20
+
+    # ── Recent Activity ─────────────────────────────────────────────────────
+    y -= 10
+    if y < 100:
+        p.showPage()
+        y = height - 50
+
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, y, "Recent Activity")
+    y -= 25
+
     p.setFont("Helvetica-Bold", 10)
     p.drawString(70, y, "Activity")
     p.drawString(250, y, "Type")
     p.drawString(350, y, "Score")
     p.drawString(450, y, "Date")
     y -= 15
-    p.line(65, y+12, width - 50, y+12)
-    
+    p.line(65, y + 12, width - 50, y + 12)
+
     p.setFont("Helvetica", 10)
     for act in data['recent_activity']:
+        if y < 60:
+            p.showPage()
+            y = height - 50
         p.drawString(70, y, act['name'][:30])
         p.drawString(250, y, act['type'])
         p.drawString(350, y, act['score'])
         p.drawString(450, y, act['date'])
         y -= 20
-        if y < 50:
-            p.showPage()
-            y = height - 50
-            
+
     # Footer
     p.setFont("Helvetica-Oblique", 8)
     p.drawCentredString(width/2, 30, "Generated by CareerBridge — Elevating Your Professional Journey")
-    
+
     p.showPage()
     p.save()
-    
+
     buffer.seek(0)
     full_name = f"{current_user.first_name} {current_user.last_name}"
     return Response(

@@ -13,6 +13,7 @@ export default function Interview({ onNav, isLoggedIn }) {
   const [sessions, setSessions] = useState([])
   const [questions, setQuestions] = useState([])
   const [sessionId, setSessionId] = useState(null)
+  const timerRef = useRef(null)
 
   useEffect(() => {
     if (view === 'home' && isLoggedIn) {
@@ -42,8 +43,15 @@ export default function Interview({ onNav, isLoggedIn }) {
 
   useEffect(() => {
     if (view !== 'session') return
+
     timerRef.current = setInterval(() => setSecs(s => s + 1), 1000)
-    return () => clearInterval(timerRef.current)
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
   }, [view])
 
   const mm = String(Math.floor(secs / 60)).padStart(2, '0')
@@ -60,7 +68,10 @@ export default function Interview({ onNav, isLoggedIn }) {
         order: qi
       })
       if (qi + 1 >= questions.length) {
-        clearInterval(timerRef.current)
+        if (timerRef.current) {
+          clearInterval(timerRef.current)
+          timerRef.current = null
+        }
         await api.interviews.complete({ session_id: sessionId, duration_secs: secs })
         setView('home')
         alert('Session complete! Your report is ready.')
@@ -162,6 +173,14 @@ export default function Interview({ onNav, isLoggedIn }) {
             </table>
           </div>
         </>
+      )}
+
+      {view === 'session' && (!q || questions.length === 0) && (
+        <div className="admin-card" style={{ padding: 30, textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Session failed to start</div>
+          <p style={{ color: 'var(--t4)', marginBottom: 16 }}>No questions available right now. Please return to the interview home and try again.</p>
+          <Btn size="sm" onClick={() => { setView('home'); setSessionType(null); setQuestions([]); setQi(0); setAnswer('') }}>← Back to Mock Interview</Btn>
+        </div>
       )}
 
       {view === 'session' && q && (

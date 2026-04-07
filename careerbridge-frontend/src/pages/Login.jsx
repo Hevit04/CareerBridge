@@ -15,10 +15,30 @@ export default function Login({ onNav, onLogin }) {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
+  const validateEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+  const validateEnrollment = (e) => /^AU\d{7}$/.test(e)
+
   const handleLogin = async (e) => {
     if (e && e.preventDefault) e.preventDefault()
-    setLoading(true)
     setError('')
+
+    // Frontend validation
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address (e.g. name@example.com)')
+      return
+    }
+    if (tab === 'register') {
+      if (!firstName.trim() || !lastName.trim()) {
+        setError('Please enter your first and last name')
+        return
+      }
+      if (!validateEnrollment(enrollmentNo)) {
+        setError('Enrollment number must be in AU format: AU followed by 7 digits (e.g. AU2340065)')
+        return
+      }
+    }
+
+    setLoading(true)
     try {
       if (tab === 'login') {
         const res = await api.auth.login({ email, password, role })
@@ -35,7 +55,15 @@ export default function Login({ onNav, onLogin }) {
         onLogin(res)
       }
     } catch (err) {
-      setError(err.message)
+      const msg = err.message || ''
+      if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('already registered'))
+        setError('This email is already registered. Please log in instead.')
+      else if (msg.toLowerCase().includes('password'))
+        setError('Incorrect password. Please try again.')
+      else if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('invalid credentials'))
+        setError('No account found with this email. Please check and try again.')
+      else
+        setError(msg || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -176,14 +204,21 @@ export default function Login({ onNav, onLogin }) {
             <div style={{ marginBottom: 10 }}>
               <label style={{ fontFamily: '"DM Mono"', fontSize: 11, fontWeight: 700, color: 'var(--t3)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '.07em' }}>Enrollment No.</label>
               <input 
-                placeholder="AU2340XXX" 
+                placeholder="AU2340065" 
                 value={enrollmentNo}
-                onChange={(e) => setEnrollmentNo(e.target.value)}
+                onChange={(e) => setEnrollmentNo(e.target.value.toUpperCase())}
+                maxLength={9}
                 style={{
-                  width: '100%', background: 'var(--s2)', border: '1px solid var(--bd)', borderRadius: 10,
-                  padding: '12px 16px', color: 'var(--t1)', fontFamily: 'Syne, sans-serif', fontSize: 14,
+                  width: '100%', background: 'var(--s2)',
+                  border: `1px solid ${enrollmentNo && !validateEnrollment(enrollmentNo) ? 'var(--E)' : 'var(--bd)'}`,
+                  borderRadius: 10, padding: '12px 16px', color: 'var(--t1)', fontFamily: 'Syne, sans-serif', fontSize: 14,
                 }} 
               />
+              {enrollmentNo && !validateEnrollment(enrollmentNo) && (
+                <div style={{ fontSize: 11, color: 'var(--E)', marginTop: 4, fontFamily: '"DM Mono"' }}>
+                  Format: AU + 7 digits (e.g. AU2340065)
+                </div>
+              )}
             </div>
             <div style={{ marginBottom: 10 }}>
               <label style={{ fontFamily: '"DM Mono"', fontSize: 11, fontWeight: 700, color: 'var(--t3)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '.07em' }}>Email</label>

@@ -7,14 +7,14 @@ export default function Notifications({ onNav }) {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all') // 'all', 'unread'
-  const { addToast } = useToast()
+  const toast = useToast()
 
   const fetchNotifications = async () => {
     try {
       const data = await api.notifications.list()
       setNotifications(data)
     } catch (err) {
-      addToast('Failed to load notifications', 'error')
+      toast('Failed to load notifications')
     } finally {
       setLoading(false)
     }
@@ -26,7 +26,7 @@ export default function Notifications({ onNav }) {
 
   const markAsRead = async (id) => {
     if (id === 'sys-next-interview') {
-      addToast('System notifications cannot be modified manually', 'info')
+      toast('System notifications cannot be modified manually')
       return
     }
     try {
@@ -35,7 +35,7 @@ export default function Notifications({ onNav }) {
         prev.map(n => n.id === id ? { ...n, is_read: true } : n)
       )
     } catch (err) {
-      addToast('Failed to mark as read', 'error')
+      toast('Failed to mark as read')
     }
   }
 
@@ -43,23 +43,23 @@ export default function Notifications({ onNav }) {
     try {
       await api.notifications.markAllRead()
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
-      addToast('All notifications marked as read', 'success')
+      toast('All notifications marked as read')
     } catch (err) {
-      addToast('Failed to mark all as read', 'error')
+      toast('Failed to mark all as read')
     }
   }
 
   const deleteNotification = async (id) => {
     if (id === 'sys-next-interview') {
-      addToast('System notifications cannot be modified manually', 'info')
+      toast('System notifications cannot be modified manually')
       return
     }
     try {
       await api.notifications.delete(id)
       setNotifications(prev => prev.filter(n => n.id !== id))
-      addToast('Notification deleted', 'success')
+      toast('Notification deleted')
     } catch (err) {
-      addToast('Failed to delete notification', 'error')
+      toast('Failed to delete notification')
     }
   }
 
