@@ -32,19 +32,6 @@ def _compute_match(internship: Internship, user: User) -> int:
     return int(overlap_pct * 0.6 + internship.base_match * 0.4)
 
 
-def _cleanup_expired_internships(db: Session):
-    """Delete internships that have passed their deadline (YYYY-MM-DD format)."""
-    today = date.today().isoformat()
-    # Simple string comparison works for YYYY-MM-DD
-    expired = db.query(Internship).filter(
-        Internship.deadline < today,
-        Internship.deadline.like("____-__-__") # Only target standardized dates
-    ).all()
-    if expired:
-        for i in expired:
-            db.delete(i)
-        db.commit()
-
 
 @router.get("/", response_model=List[InternshipOut])
 def list_internships(
@@ -53,7 +40,6 @@ def list_internships(
     current_user: User = Depends(get_current_user),
 ):
     """Return active internships, filtered by domain if provided, with personalised match scores."""
-    _cleanup_expired_internships(db)
     query = db.query(Internship).filter(Internship.is_active == True)
     if domain and domain != "all":
         query = query.filter(Internship.domain == domain)

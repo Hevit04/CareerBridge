@@ -13,7 +13,67 @@ export default function Interview({ onNav, isLoggedIn }) {
   const [sessions, setSessions] = useState([])
   const [questions, setQuestions] = useState([])
   const [sessionId, setSessionId] = useState(null)
+  const [isRecording, setIsRecording] = useState(false)
   const timerRef = useRef(null)
+  const recognitionRef = useRef(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US'; // Help it understand English better
+
+        recognition.onresult = (event) => {
+          let finalTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            // Add a space after final results so words don't get mashed together
+            finalTranscript += event.results[i][0].transcript + (event.results[i].isFinal ? ' ' : '');
+          }
+          setAnswer(finalTranscript);
+        };
+
+        recognition.onerror = (event) => {
+          console.error("Speech recognition error", event.error);
+          setIsRecording(false);
+        };
+        
+        recognition.onend = () => {
+          setIsRecording(false);
+        };
+
+        recognitionRef.current = recognition;
+      }
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const toggleRecording = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported in this browser.")
+      return
+    }
+    
+    if (isRecording) {
+      recognitionRef.current.stop()
+      setIsRecording(false)
+    } else {
+      setAnswer('')
+      try {
+        recognitionRef.current.start()
+        setIsRecording(true)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }
 
   useEffect(() => {
     if (view === 'home' && isLoggedIn) {
@@ -53,6 +113,24 @@ export default function Interview({ onNav, isLoggedIn }) {
       }
     }
   }, [view])
+
+  // Speak the question when it changes
+  useEffect(() => {
+    if (view === 'session' && questions[qi]) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(questions[qi]);
+        utterance.lang = 'en-US';
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }, [view, qi, questions])
 
   const mm = String(Math.floor(secs / 60)).padStart(2, '0')
   const ss = String(secs % 60).padStart(2, '0')
@@ -207,6 +285,13 @@ export default function Interview({ onNav, isLoggedIn }) {
               <div className="admin-panel" style={{ background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 16, padding: 22, animationDelay: '.1s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--t1)' }}>Your Response</span>
+                  <Btn 
+                    size="xs" 
+                    variant={isRecording ? "e" : "p"} 
+                    onClick={toggleRecording}
+                  >
+                    {isRecording ? '⏹ Stop Recording' : '🎤 Speak Answer'}
+                  </Btn>
                 </div>
                 <textarea
                   value={answer}

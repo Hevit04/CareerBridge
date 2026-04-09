@@ -13,6 +13,7 @@ from app.models.user import User
 from app.models.assessment import Test, Question, TestAttempt
 from app.models.interview import InterviewSession
 from app.models.internship import Internship, Application
+from app.models.backup import BackupRecord
 from app.schemas.user import UserOut, AdminUserAction
 from app.schemas.assessment import TestCreate, TestUpdate, TestOut, QuestionCreate, QuestionOut
 from app.schemas.internship import InternshipCreate, InternshipUpdate, InternshipOut
@@ -97,6 +98,17 @@ def delete_user(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Store in backup
+    u_dict = {c.name: getattr(user, c.name) for c in user.__table__.columns}
+    # datetime objects need to be stringified for JSON compatibility
+    for k, v in u_dict.items():
+        if isinstance(v, datetime.datetime) or isinstance(v, datetime.date):
+            u_dict[k] = v.isoformat()
+            
+    backup = BackupRecord(table_name="users", original_id=user.id, data=u_dict)
+    db.add(backup)
+    
     db.delete(user)
     db.commit()
 
@@ -159,6 +171,15 @@ def delete_test(
     test = db.query(Test).filter(Test.id == test_id).first()
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
+        
+    t_dict = {c.name: getattr(test, c.name) for c in test.__table__.columns}
+    for k, v in t_dict.items():
+        if isinstance(v, datetime.datetime) or isinstance(v, datetime.date):
+            t_dict[k] = v.isoformat()
+            
+    backup = BackupRecord(table_name="tests", original_id=test.id, data=t_dict)
+    db.add(backup)
+    
     db.delete(test)
     db.commit()
 
@@ -201,6 +222,11 @@ def delete_question(
     q = db.query(Question).filter(Question.id == q_id, Question.test_id == test_id).first()
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
+        
+    q_dict = {c.name: getattr(q, c.name) for c in q.__table__.columns}
+    backup = BackupRecord(table_name="questions", original_id=q.id, data=q_dict)
+    db.add(backup)
+    
     db.delete(q)
     db.commit()
 
@@ -229,22 +255,8 @@ def update_question(
 # INTERNSHIP MANAGEMENT  (/api/admin/internships)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _cleanup_expired_internships(db: Session):
-    """Delete internships that have passed their deadline (YYYY-MM-DD format)."""
-    today = date.today().isoformat()
-    expired = db.query(Internship).filter(
-        Internship.deadline < today,
-        Internship.deadline.like("____-__-__")
-    ).all()
-    if expired:
-        for i in expired:
-            db.delete(i)
-        db.commit()
-
-
 @router.get("/internships", response_model=List[InternshipOut])
 def admin_list_internships(db: Session = Depends(get_db), admin=Depends(require_admin)):
-    _cleanup_expired_internships(db)
     return db.query(Internship).order_by(Internship.created_at.desc()).all()
 
 
@@ -299,6 +311,15 @@ def delete_internship(
     i = db.query(Internship).filter(Internship.id == intern_id).first()
     if not i:
         raise HTTPException(status_code=404, detail="Internship not found")
+        
+    i_dict = {c.name: getattr(i, c.name) for c in i.__table__.columns}
+    for k, v in i_dict.items():
+        if isinstance(v, datetime.datetime) or isinstance(v, datetime.date):
+            i_dict[k] = v.isoformat()
+            
+    backup = BackupRecord(table_name="internships", original_id=i.id, data=i_dict)
+    db.add(backup)
+    
     db.delete(i)
     db.commit()
 

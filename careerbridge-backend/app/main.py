@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth, users, assessments, interviews, internships, analytics, admin, notifications
 from app.core.database import engine, Base
+from app.models.backup import BackupRecord
 
 # Create all tables
 Base.metadata.create_all(bind=engine)

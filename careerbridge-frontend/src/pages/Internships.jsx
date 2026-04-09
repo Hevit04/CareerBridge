@@ -95,7 +95,17 @@ export default function Internships({ onNav, isLoggedIn }) {
     }
   }
 
-  const list = internships
+  const currentDate = new Date()
+  currentDate.setHours(0,0,0,0) // ignore time for deadline comparison
+  const list = [...internships].sort((a, b) => {
+    const aDate = new Date(a.deadline)
+    const bDate = new Date(b.deadline)
+    const aActive = aDate >= currentDate
+    const bActive = bDate >= currentDate
+    if (aActive && !bActive) return -1
+    if (!aActive && bActive) return 1
+    return 0
+  })
 
   return (
     <div style={{ maxWidth: 1260, margin: '0 auto', padding: '40px 28px' }}>
@@ -134,23 +144,32 @@ export default function Internships({ onNav, isLoggedIn }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
-        {list.map((intern, idx) => (
+        {list.map((intern, idx) => {
+          const isExpired = new Date(intern.deadline) < currentDate
+          
+          return (
           <div key={intern.id}
-            onClick={() => setSelected(intern)}
+            onClick={() => !isExpired && setSelected(intern)}
             style={{
               background: 'var(--s1)', border: '1px solid var(--bd)', borderRadius: 16, padding: 24,
-              transition: 'all .25s cubic-bezier(.34,1.2,.64,1)', cursor: 'pointer',
+              transition: 'all .25s cubic-bezier(.34,1.2,.64,1)', cursor: isExpired ? 'not-allowed' : 'pointer',
               animation: `fadeUp .45s ${idx * 0.07}s both`,
+              opacity: isExpired ? 0.6 : 1,
+              filter: isExpired ? 'grayscale(100%)' : 'none'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.borderColor = 'rgba(0,245,212,.22)'
+              if (!isExpired) {
+                e.currentTarget.style.borderColor = 'rgba(0,245,212,.22)'
               e.currentTarget.style.transform = 'translateY(-3px)'
-              e.currentTarget.style.boxShadow = '0 14px 42px rgba(0,0,0,.45)'
+                e.currentTarget.style.boxShadow = '0 14px 42px rgba(0,0,0,.45)'
+              }
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'var(--bd)'
-              e.currentTarget.style.transform = ''
-              e.currentTarget.style.boxShadow = ''
+              if (!isExpired) {
+                e.currentTarget.style.borderColor = 'var(--bd)'
+                e.currentTarget.style.transform = ''
+                e.currentTarget.style.boxShadow = ''
+              }
             }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
               <div style={{
@@ -173,13 +192,15 @@ export default function Internships({ onNav, isLoggedIn }) {
               <Chip style={{ fontSize: 10, padding: '2px 8px' }}>{DOMAIN_MAP[intern.domain] || intern.domain}</Chip>
             </div>
             <div style={{ borderTop: '1px solid var(--bd)', paddingTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontFamily: '"DM Mono"', fontSize: 11, color: 'var(--t4)' }}>Deadline: {new Date(intern.deadline).toLocaleDateString()}</span>
-              <Btn size="xs" disabled={isApplied(intern.id)} onClick={(e) => { e.stopPropagation(); handleApply(intern) }}>
-                {isApplied(intern.id) ? 'Applied ✓' : (intern.apply_link ? 'Apply Externally ↗' : 'Apply →')}
+              <span style={{ fontFamily: '"DM Mono"', fontSize: 11, color: isExpired ? 'var(--E)' : 'var(--t4)' }}>
+                {isExpired ? 'Deadline Passed' : `Deadline: ${new Date(intern.deadline).toLocaleDateString()}`}
+              </span>
+              <Btn size="xs" disabled={isApplied(intern.id) || isExpired} onClick={(e) => { e.stopPropagation(); handleApply(intern) }}>
+                {isExpired ? 'Expired' : (isApplied(intern.id) ? 'Applied ✓' : (intern.apply_link ? 'Apply Externally ↗' : 'Apply →'))}
               </Btn>
             </div>
           </div>
-        ))}
+        )})}
       </div>
 
       {selected && (

@@ -20,13 +20,13 @@ const ADMIN_LINKS = [
   { key: 'admin-moderation', label: 'Moderation' },
 ]
 
-export default function Navbar({ page, go, isAdmin, isLoggedIn, user, onLogout }) {
+export default function Navbar({ page, go, isAdmin, isLoggedIn, user, onLogout, theme, toggleTheme }) {
   const navLinks = isAdmin ? ADMIN_LINKS : STUDENT_LINKS
 
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-[900]"
-      style={{ background: 'rgba(7,7,15,.82)', backdropFilter: 'blur(24px)', borderBottom: '1px solid var(--bd)' }}
+      style={{ background: theme === 'light' ? 'rgba(255,255,255,0.85)' : 'rgba(7,7,15,.82)', backdropFilter: 'blur(24px)', borderBottom: '1px solid var(--bd)' }}
     >
       <div className="max-w-[1300px] mx-auto px-7 h-[62px] flex items-center justify-between">
         {/* Logo */}
@@ -71,6 +71,20 @@ export default function Navbar({ page, go, isAdmin, isLoggedIn, user, onLogout }
         </div>
 
         <div className="flex items-center gap-4">
+          <button 
+            onClick={toggleTheme}
+            style={{ 
+              background: 'transparent', border: 'none', cursor: 'pointer', 
+              fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--t2)', transition: 'transform 0.2s', padding: 4
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+
           {isLoggedIn ? (
             <div className="flex items-center gap-3">
               <button 

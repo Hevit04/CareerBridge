@@ -10,6 +10,8 @@ export default function AdminUsers({ onNav }) {
   const [loading, setLoading] = useState(true)
   const [sortKey, setSortKey] = useState('enrollment_id')
   const [sortOrder, setSortOrder] = useState('desc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const usersPerPage = 5
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -60,6 +62,7 @@ export default function AdminUsers({ onNav }) {
       setSortKey(key)
       setSortOrder(key === 'enrollment_no' ? 'desc' : 'asc')
     }
+    setCurrentPage(1)
   }
 
   const toggleBlock = async (id, isActive) => {
@@ -118,7 +121,7 @@ export default function AdminUsers({ onNav }) {
           <thead><tr><th>Name</th><th>Enrollment</th><th>Status</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
           <tbody>
             {loading ? <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>Loading students...</td></tr> : 
-              sortedUsers.map((r, idx) => (
+              sortedUsers.slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage).map((r, idx) => (
                 <tr key={r.id} className="admin-row" style={{ animationDelay: `${idx * 0.04}s` }}>
                   <td style={{ color: 'var(--t1)', fontWeight: 700 }}>{r.name}</td>
                   <td style={{ fontFamily: '"DM Mono"', fontSize: 13 }}>{r.enrollment_no}</td>
@@ -142,6 +145,24 @@ export default function AdminUsers({ onNav }) {
             }
           </tbody>
         </table>
+        
+        {!loading && sortedUsers.length > usersPerPage && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 20 }}>
+            <Btn variant="g" size="xs" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</Btn>
+            {Array.from({ length: Math.ceil(sortedUsers.length / usersPerPage) }, (_, i) => i + 1).map(page => (
+              <Btn 
+                key={page} 
+                variant={currentPage === page ? 'p' : 'g'} 
+                size="xs" 
+                onClick={() => setCurrentPage(page)}
+                style={{ minWidth: 32 }}
+              >
+                {page}
+              </Btn>
+            ))}
+            <Btn variant="g" size="xs" disabled={currentPage === Math.ceil(sortedUsers.length / usersPerPage)} onClick={() => setCurrentPage(p => p + 1)}>Next</Btn>
+          </div>
+        )}
       </div>
     </div>
   )

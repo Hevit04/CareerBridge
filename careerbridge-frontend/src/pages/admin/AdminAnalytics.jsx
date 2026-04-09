@@ -10,6 +10,8 @@ export default function AdminAnalytics({ onNav }) {
   const [loading, setLoading] = useState(true)
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const studentsPerPage = 5
 
   useEffect(() => {
     api.admin.analytics()
@@ -85,7 +87,9 @@ export default function AdminAnalytics({ onNav }) {
           <table className="tbl">
             <thead><tr><th>Student</th><th>Enrollment</th><th>Avg Test</th><th>Interview</th><th>Primary Skill Gap</th></tr></thead>
             <tbody>
-              {(data?.student_performances || []).map((s, idx) => (
+              {(data?.student_performances || [])
+                .slice((currentPage - 1) * studentsPerPage, currentPage * studentsPerPage)
+                .map((s, idx) => (
                 <tr key={s.enrollment_no} className="admin-row" style={{ animationDelay: `${idx * 0.04}s` }}>
                   <td style={{ color: 'var(--t1)', fontWeight: 700 }}>{s.name}</td>
                   <td>{s.enrollment_no}</td>
@@ -99,6 +103,24 @@ export default function AdminAnalytics({ onNav }) {
               )}
             </tbody>
           </table>
+        )}
+        
+        {!loading && data?.student_performances?.length > studentsPerPage && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 20 }}>
+            <Btn variant="g" size="xs" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</Btn>
+            {Array.from({ length: Math.ceil(data.student_performances.length / studentsPerPage) }, (_, i) => i + 1).map(page => (
+              <Btn 
+                key={page} 
+                variant={currentPage === page ? 'p' : 'g'} 
+                size="xs" 
+                onClick={() => setCurrentPage(page)}
+                style={{ minWidth: 32 }}
+              >
+                {page}
+              </Btn>
+            ))}
+            <Btn variant="g" size="xs" disabled={currentPage === Math.ceil(data.student_performances.length / studentsPerPage)} onClick={() => setCurrentPage(p => p + 1)}>Next</Btn>
+          </div>
         )}
       </div>
 

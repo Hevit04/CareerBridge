@@ -46,6 +46,7 @@ const ADMIN_PAGES = new Set([
 export default function App() {
   const [page, setPage] = useState('home')
   const [auth, setAuth] = useState({ isLoggedIn: false, role: 'student', user: null })
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -62,6 +63,22 @@ export default function App() {
         })
     }
   }, [])
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme')
+    } else {
+      document.body.classList.remove('light-theme')
+    }
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const nextTheme = prev === 'light' ? 'dark' : 'light'
+      localStorage.setItem('theme', nextTheme)
+      return nextTheme
+    })
+  }
 
   const go = (nextPage) => {
     if (ADMIN_PAGES.has(nextPage) && auth.role !== 'admin') {
@@ -100,6 +117,8 @@ export default function App() {
         isLoggedIn={auth.isLoggedIn}
         user={auth.user}
         onLogout={handleLogout}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
       <div className="pt-[62px] min-h-screen">
         <CurrentPage onNav={go} onLogin={handleLogin} isAdmin={auth.role === 'admin'} isLoggedIn={auth.isLoggedIn} />

@@ -18,6 +18,22 @@
   --t4: #6a6a90;
 }
 
+body.light-theme {
+  --P: #008f7b;
+  --N: #5d1bb5;
+  --A: #7b9900;
+  --E: #db2744;
+  --bg: #f5f7fb;
+  --s1: #ffffff;
+  --s2: #ebedf2;
+  --s3: #dfe3f0;
+  --bd: rgba(0, 0, 0, 0.09);
+  --t1: #111827;
+  --t2: #374151;
+  --t3: #6b7280;
+  --t4: #9ca3af;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
