@@ -335,7 +335,7 @@ export default function Profile({ onNav, isLoggedIn }) {
               <Btn variant="g" size="xs" onClick={() => fileInputRef.current.click()}>Upload New</Btn>
             </div>
             <div
-              onClick={() => user.resume_filename && window.open(`import.meta.env.VITE_API_URL/uploads/resumes/${user.resume_filename}`, '_blank')}
+              onClick={() => user.resume_filename && window.open(`${import.meta.env.VITE_API_BASE_URL || 'https://careerbridge-backend-vw5s.onrender.com'}/uploads/resumes/${user.resume_filename}`, '_blank')}
               style={{
                 padding: 16, background: 'rgba(0,245,212,.05)', border: '1px solid rgba(0,245,212,.14)',
                 borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
